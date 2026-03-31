@@ -3,14 +3,15 @@
 ## 1️⃣ Project Directory Structure
 
 
+```text
 dht20-driver/
 │
-├── Makefile # Kernel module build instructions
-├── dht20.c # Linux device driver source code
-├── dht20-overlay.dts # Device Tree Overlay for DHT20
-├── README.md # This documentation
-└── LICENSE # GPL license
-
+├── Makefile              # Kernel module build instructions
+├── dht20.c               # Linux device driver source code
+├── dht20-overlay.dts     # Device Tree Overlay for DHT20
+├── README.md             # This documentation
+└── LICENSE               # GPL license
+```
 
 ### Description of Each File
 
