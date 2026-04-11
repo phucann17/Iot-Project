@@ -3,11 +3,15 @@
 
 #include <Arduino.h>
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
-#include "global.h"
-// ================== STRUCT TRUYỀN DATA ==================
+#include <ESPAsyncWebServer.h>
+#include "LittleFS.h"
+#include <AsyncTCP.h>
+#include <ArduinoJson.h>
+#include <ElegantOTA.h>
+#include <task_handler.h>
+// ===== STRUCT DATA =====
 typedef struct {
     float temp;
     float humi;
@@ -15,18 +19,26 @@ typedef struct {
     int hState;
 } SensorData_t;
 
-// ================== QUEUE ==================
-extern QueueHandle_t xSensorQueue;
+// ===== QUEUE =====
+extern QueueHandle_t xQueueLED;
+extern QueueHandle_t xQueueNeo;
+extern QueueHandle_t xQueueWeb;
+extern QueueHandle_t xQueueCoreIot;
+// ===== SEMAPHORE =====
+extern SemaphoreHandle_t xSensorSem;
+extern SensorData_t data;
 
-// ================== SEMAPHORE ==================
-extern SemaphoreHandle_t semLCD;
-extern SemaphoreHandle_t semLED;
-extern SemaphoreHandle_t semNeo;
+extern bool isAPMode;
+extern bool connecting;
+extern AsyncWebServer server;
+extern AsyncWebSocket ws;
 
-// ================== WIFI / INTERNET ==================
+extern String WIFI_SSID;
+extern String WIFI_PASS;
+extern String CORE_IOT_TOKEN;
+extern String CORE_IOT_SERVER;
+extern String CORE_IOT_PORT;
+
+extern boolean isWifiConnected;
 extern SemaphoreHandle_t xBinarySemaphoreInternet;
-
-// ================== CLOUD ==================
-extern SemaphoreHandle_t xCloudStateSemaphore;
-
 #endif
