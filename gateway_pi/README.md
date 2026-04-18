@@ -1,165 +1,183 @@
-# DHT20 Linux Device Driver
+# Linux I2C Sensor Drivers (BH1750 + DHT20)
 
-## 1️⃣ Project Directory Structure
+## Overview
 
+This project implements two Linux kernel I2C character device drivers for commonly used environmental sensors:
 
-```text
-dht20-driver/
-│
-├── Makefile              # Kernel module build instructions
-├── dht20.c               # Linux device driver source code
-├── dht20-overlay.dts     # Device Tree Overlay for DHT20
-├── README.md             # This documentation
-└── LICENSE               # GPL license
-```
+BH1750: Ambient light sensor (lux measurement)
+DHT20: Temperature and humidity sensor
 
-### Description of Each File
+Both drivers expose simple character device interfaces under `/dev`, allowing user-space applications to access sensor data easily using standard file operations (`open`, `read`).
 
-- **dht20.c**: Implementation of the Linux character device driver for DHT20.  
-- **Makefile**: Used to compile the driver into a kernel module (`.ko`).  
-- **dht20-overlay.dts**: Device Tree Overlay declaring the DHT20 sensor on I2C bus (`i2c1`) at address `0x38`.  
-- **LICENSE**: GPL license for the driver.  
-- **README.md**: Documentation describing project structure, build process, and driver logic.
+This project is designed for embedded Linux learning and demonstrates:
+
+I2C driver development
+
+Character device registration
+
+Device tree matching
+
+User-space and kernel-space communication
 
 ---
 
-## 2️⃣ Linux Device Driver Development Process
+## Architecture
 
-### 2.1 Identify Device Type
-- DHT20 is an **I2C sensor**.  
-- The driver is an **I2C client driver**, exposing a **character device interface** (`/dev/DHT20`) to user-space.  
-- User-space programs can read **temperature** and **humidity** via standard file operations (`open`, `read`).
+### 1. I2C Layer
+Each sensor is controlled via the Linux I2C subsystem:
+- Device is matched using Device Tree (`compatible` string)
+- Kernel calls `probe()` when device is detected
+- Communication is done using:
+  - `i2c_master_send()`
+  - `i2c_master_recv()`
 
-### 2.2 Character Device Interface
+### 2. Character Device Layer
+Each driver registers a character device:
+- Allocates major/minor number (`alloc_chrdev_region`)
+- Initializes `cdev` structure
+- Creates device node under `/dev`
+- Registers file operations:
+  - `open()`
+  - `read()`
+  - `write()` (optional)
 
-Linux character devices require these **file operations**:
-
-| Function       | Purpose                                                |
-|----------------|--------------------------------------------------------|
-| `open()`       | Called when user-space opens `/dev/DHT20`. Initializes device access. |
-| `release()`    | Called when device is closed. Cleanup or logging.    |
-| `read()`       | Reads sensor data and returns it to user-space.      |
-| `write()`      | Optional. Not used for DHT20 but can send data if needed. |
-| `ioctl()`      | Optional control commands. Currently a placeholder returning 0. |
-
-These are declared in a `file_operations` struct:
-
-```c
-static const struct file_operations dht_fops = {
-    .owner = THIS_MODULE,
-    .open = dht20_open,
-    .release = dht20_release,
-    .read = dht20_read,
-    .write = dht20_write,
-    .unlocked_ioctl = dht20_ioctl
-};
+### 3. Data Flow
 ```
-The kernel uses this structure to know which function to call when /dev/DHT20 is accessed.
+User Space App
+    ↓ read()/open()
+/dev/bh1750 or /dev/dht20
+    ↓ file_operations
+Kernel Driver
+    ↓ I2C communication
+Sensor Hardware
+```
 
-### 2.3 I2C Client Driver
+---
 
-Linux uses a **client-driver model** for I2C devices:
+## Features
 
-- **`probe()`**: Called when the driver matches a device on the bus.  
-  + Allocates and initializes `struct dht20_data`.  
-  + Registers a character device (`alloc_chrdev_region`, `cdev_init`, `cdev_add`).  
-  + Creates a device class (`class_create`) and `/dev/DHT20` node.  
+### BH1750 Driver
+- Power ON / RESET initialization
+- Continuous high-resolution mode
+- Raw lux conversion to percentage scale
+- 2-byte I2C read data handling
 
-- **`remove()`**: Called when the driver is removed.  
-  + Frees memory and removes the character device, class, and node.  
+### DHT20 Driver
+- Sensor calibration check
+- Trigger measurement command
+- 20-bit humidity and temperature parsing
+- Conversion to human-readable values
 
-- **Key struct:** `struct dht20_data`  
-  + Contains `i2c_client *client`, `cdev`, `class`, `device`, and kernel buffer.  
-  + Stored in `file->private_data` for use in `read()` and other file operations.
+### Common Features
+- Character device interface
+- Device tree support
+- Kernel logging (`printk`)
+- User-space C test applications
 
-### 2.4 Communicating with DHT20
-Steps to read data from the sensor:
+---
 
-- **Trigger measurement (`dht20_trigger_measurement`)**  
-  + Sends an I2C command to the DHT20 sensor.  
+## Build & Install
 
-- **Read raw data (`dht20_read_data`)**  
-  + Receives 7 bytes of raw sensor data via I2C.  
+1. Build kernel modules
+   ```bash
+   make
+   ```
+2. Insert modules
+   ```bash
+   sudo insmod bh1750.ko
+   sudo insmod dht20.ko
+   ```
+3. Check kernel logs
+   ```bash
+   dmesg | tail
+   ```
+4. Remove modules
+   ```bash
+   sudo rmmod bh1750
+   sudo rmmod dht20
+   ```
 
-- **Parse data (`dht20_parse`)**  
-  + Converts 20-bit raw values into temperature (°C) and humidity (%).  
+---
 
-- **Read function (`dht20_read`)**  
-  + Combines the above steps.  
-  + Waits ~80 ms for the measurement to complete.  
-  + Formats the output string and copies it to user-space using `copy_to_user`.  
+## Usage
 
-- **Key structs used:**  
-  + `struct dht20_data` – holds `i2c_client`, `cdev`, `class`, `device`, and kernel buffer.  
-  + `struct i2c_client *client` – I2C handle.  
-  + `char __user *` – user-space buffer pointer. 
+Check device nodes
+```bash
+ls /dev/bh1750
+ls /dev/dht20
+```
 
-### 2.5 Driver Initialization & Exit
+Read sensor data
+```bash
+cat /dev/bh1750
+cat /dev/dht20
+```
 
-- **`dht20_init`**  
-  + Registers the I2C driver when the module is loaded.  
+Run test applications
+```bash
+./bh1750_app
+./dht20_app
+```
 
-- **`dht20_exit`**  
-  + Unregisters the driver when the module is removed.  
+---
 
-- **Module information:**  
-  + Uses **GPL license**.  
-  + Declares author and version.
+## Example Output
 
-### 2.6 Device Tree Overlay
-- Declares a `"dht20"` device at address **0x38** on **i2c1** bus.  
-- Loading the overlay automatically calls the driver’s `probe()` function.
+### BH1750
+```
+Light: 45%
+Light: 47%
+Light: 50%
+```
 
-### 2.7 Makefile & Compilation
-- Makefile uses KDIR=/lib/modules/$(uname -r)/build to build dht20.ko.
-- Common targets in the Makefile:
-	+ make all – builds the kernel module (dht20.ko).
-	+ make clean – removes compiled files (*.ko, *.o, *.mod.*) from the project directory.
-- Compilation & installation workflow:
-	+ Build the kernel module:
-	```bash
-  	make all
-- Compile Device Tree Overlay:
-	```bash
- 	sudo dtc -@ -I dts -O dtb -o dht20.dtbo dht20-overlay.dts
-- Install overlay to /boot/overlays:
-  	```bash
-  	sudo cp dht20.dtbo /boot/overlays/
-- Reboot to apply the overlay:
-  	```bash
-  	sudo reboot
-- Insert the driver module:
-  	```bash
-  	sudo insmod dht20.ko
-- Test the device:
-  	```bash
-  	cat /dev/DHT20
--> Output example: Temp=25C Hum=55%
-- Remove the module when done:
-  	```bash
-	sudo rmmod dht20.ko
-Notes:
-make all automatically uses the kernel build system to compile the driver against your current kernel.
+### DHT20
+```
+Temp=29C Hum=40%
+Temp=30C Hum=42%
+```
 
-make clean is useful if you want to rebuild the module from scratch.
+---
 
-Device Tree overlay must be compiled and copied to /boot/overlays before rebooting to ensure the kernel detects the sensor automatically.
+## Troubleshooting
 
-### 2.8 Summary of Key Functions & Structs
+### 1. Device not found in /dev
+Check if driver is loaded:
+```bash
+lsmod | grep bh1750
+lsmod | grep dht20
+```
+Check kernel log:
+```bash
+dmesg | tail
+```
 
-| Function | Purpose | Steps / Structs used |
-|----------|---------|--------------------|
-| dht20_probe | Initialize driver and create char device | Uses `struct dht20_data`, `i2c_client`, `cdev`, `class`, `device` |
-| dht20_remove | Cleanup driver | Deletes char device, class, frees `struct dht20_data` |
-| dht20_open | Open device | Accesses `private_data` |
-| dht20_release | Close device | Cleanup |
-| dht20_read | Read temperature & humidity | Calls `trigger_measurement` → `read_data` → `parse` → copy to user-space |
-| dht20_trigger_measurement | Send measurement command | Uses `i2c_master_send` |
-| dht20_read_data | Receive raw data | Uses `i2c_master_recv` |
-| dht20_parse | Convert raw values to temperature/humidity | Calculates from 20-bit raw data |
+---
 
-**Key structs:**
+### 2. Permission denied
+```bash
+sudo chmod 666 /dev/bh1750
+sudo chmod 666 /dev/dht20
+```
 
-- `struct dht20_data` – holds `i2c_client`, `cdev`, `class`, `device`, and buffer  
-- `struct i2c_client *client` – I2C handle  
-- `char __user *` – user-space buffer pointer
+---
+
+### 3. I2C communication failed
+Check I2C device detection:
+```bash
+i2cdetect -y 1
+```
+Verify sensor wiring (VCC, GND, SDA, SCL)
+
+---
+
+### 4. No output or stuck read
+Ensure sensor initialization succeeded
+Check `probe()` logs in `dmesg`
+Verify Device Tree `compatible` string
+
+---
+
+## Notes
+This project is for educational purposes in embedded Linux development
+Drivers are simplified and not optimized for production use
+Proper error handling and concurrency protection can be improved further

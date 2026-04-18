@@ -8,12 +8,13 @@
         target = <&i2c1>;
 
         __overlay__ {
-            #address-cells = <1>;   
-            #size-cells = <0>;      
+            #address-cells = <1>;
+            #size-cells = <0>;
 
             dht20@38 {
-                compatible = "dht20";
+                compatible = "aosong,dht20";
                 reg = <0x38>;
+                status = "okay";
             };
         };
     };
