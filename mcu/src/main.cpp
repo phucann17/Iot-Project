@@ -17,8 +17,9 @@
 void setup()
 {
   Serial.begin(115200);
+
   // check_info_File(0);
-  // // --- 1. KHỞI TẠO SEMAPHORE (THÊM VÀO ĐÂY) ---
+  // // --- 1. KHỞI TẠO SEMAPHORE ---
   // if (xBinarySemaphoreInternet == NULL) {
   //     xBinarySemaphoreInternet = xSemaphoreCreateBinary();
   //     xSemaphoreGive(xBinarySemaphoreInternet);
@@ -38,8 +39,9 @@ void setup()
   xQueueLED = xQueueCreate(5, sizeof(SensorData_t));
   xQueueNeo = xQueueCreate(5, sizeof(SensorData_t));
   xQueueWeb = xQueueCreate(5, sizeof(SensorData_t));
+  xQueueTinyML = xQueueCreate(5, sizeof(SensorData_t));
   xQueueCoreIot = xQueueCreate(5, sizeof(SensorData_t));
-  if (xQueueLED == NULL || xQueueNeo == NULL || xQueueWeb == NULL || xQueueCoreIot == NULL) {
+  if (xQueueLED == NULL || xQueueNeo == NULL || xQueueWeb == NULL || xQueueTinyML == NULL || xQueueCoreIot == NULL) {
       Serial.println("Queue create FAILED!");
   } else {
       Serial.println("Queue create OK");

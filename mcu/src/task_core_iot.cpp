@@ -122,7 +122,7 @@ void CORE_IOT_reconnect()
 void task_core_iot(void *pvParameters)
 {
 
-    startSTA();
+    // startSTA();
     Serial.println("===== CORE IOT DEBUG =====");
     Serial.print("Server: ");
     Serial.println(CORE_IOT_SERVER);
@@ -153,7 +153,7 @@ void task_core_iot(void *pvParameters)
                     tb.sendTelemetryData("temperature", data.temp);
                     tb.sendTelemetryData("humidity", data.humi);
 
-                    Serial.printf("📤 CoreIOT: T=%.2f, H=%.2f\n", data.temp, data.humi);
+                    Serial.printf("CoreIOT: T=%.2f, H=%.2f\n", data.temp, data.humi);
                 }
             }
         }

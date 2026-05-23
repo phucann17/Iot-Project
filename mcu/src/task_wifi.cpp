@@ -9,8 +9,8 @@
 
 void startAP()
 {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP("ESP32-Monitor", "12345678"); // Tên Wifi phát ra
+  WiFi.mode(WIFI_AP_STA); 
+  WiFi.softAP("ESP32-23456", "12345678"); // Tên Wifi phát ra
   Serial.print("AP IP: ");
   Serial.println(WiFi.softAPIP());
   isAPMode = true;
@@ -30,7 +30,7 @@ void startSTA()
         vTaskDelete(NULL);
     }
 
-    WiFi.mode(WIFI_STA);
+    // WiFi.mode(WIFI_STA);
 
     if (WIFI_PASS.isEmpty())
     {

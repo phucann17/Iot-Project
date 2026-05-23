@@ -5,16 +5,18 @@ QueueHandle_t xQueueLED = NULL;
 QueueHandle_t xQueueNeo = NULL;
 QueueHandle_t xQueueWeb = NULL;
 QueueHandle_t xQueueCoreIot = NULL;
+QueueHandle_t xQueueTinyML = NULL;
 // ===== SEMAPHORE =====
 SemaphoreHandle_t xSensorSem = NULL;
 
 bool isAPMode = false;
 bool connecting = true;
+bool glob_is_anomaly = false;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-String WIFI_SSID = "NHU";
-String WIFI_PASS = "23042007";
+String WIFI_SSID = "iPhone";
+String WIFI_PASS = "11111111";
 String CORE_IOT_SERVER = "app.coreiot.io";
 String CORE_IOT_PORT   = "1883";
 String CORE_IOT_TOKEN  = "vQX7xBRJgEfRNJntXIPc";

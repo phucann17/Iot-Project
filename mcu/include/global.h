@@ -23,6 +23,7 @@ typedef struct {
 extern QueueHandle_t xQueueLED;
 extern QueueHandle_t xQueueNeo;
 extern QueueHandle_t xQueueWeb;
+extern QueueHandle_t xQueueTinyML;
 extern QueueHandle_t xQueueCoreIot;
 // ===== SEMAPHORE =====
 extern SemaphoreHandle_t xSensorSem;
@@ -32,7 +33,7 @@ extern bool isAPMode;
 extern bool connecting;
 extern AsyncWebServer server;
 extern AsyncWebSocket ws;
-
+extern bool glob_is_anomaly;
 extern String WIFI_SSID;
 extern String WIFI_PASS;
 extern String CORE_IOT_TOKEN;

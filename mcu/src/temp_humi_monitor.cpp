@@ -4,47 +4,58 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-#define SDA_PIN GPIO_NUM_11
-#define SCL_PIN GPIO_NUM_12
+#define SDA_PIN GPIO_NUM_21
+#define SCL_PIN GPIO_NUM_22
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33, 16, 2); 
 
 void temp_humi_monitor(void *pvParameters) {
     // --- 1. KHỞI TẠO LCD TRƯỚC (QUAN TRỌNG) ---
     // Để LCD khởi tạo Wire mặc định trước, tránh reset cấu hình của mình
-    // Wire.begin(SDA_PIN, SCL_PIN); 
-    // lcd.begin(); 
-    // lcd.backlight();
-    // lcd.print("Init Sensor...");
+    Wire.begin(SDA_PIN, SCL_PIN); 
+    Wire.setClock(10000);
+    for (byte addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            Serial.printf("Found I2C: 0x%02X\n", addr);
+        }
+    }
+    lcd.begin(); 
+    lcd.backlight();
+    lcd.print("Init Sensor...");
 
     // --- 2. CẤU HÌNH LẠI I2C CHO ĐÚNG CHÂN ---
     // Ghi đè cấu hình chân 11, 12 sau khi LCD đã init xong
-    
+    // 
     
     // --- 3. KHỞI TẠO DHT20 ---
     // Lúc này DHT20 sẽ dùng đúng chân 11, 12 mà ta vừa set
-    // dht20.begin();
+    dht20.begin();
+    // delay(500);
     SensorData_t data;
     Serial.println("[Sensor] Init Done.");
-    // vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     while (1) {
         // --- ĐỌC CẢM BIẾN ---
-        // int status = dht20.read();
+        int status = dht20.read();
         
-        // if (status != DHT20_OK) {
-        //     Serial.println("DHT20 Error! Resetting I2C...");
-        //     // Nếu lỗi, thử reset lại I2C
-        //     Wire.begin(SDA_PIN, SCL_PIN);
-        //     dht20.begin();
-        //     vTaskDelay(2000 / portTICK_PERIOD_MS);
-        //     continue;
-        // }
+        if (status != DHT20_OK) {
+            Serial.println("DHT20 Error! Resetting I2C...");
+            // Nếu lỗi, thử reset lại I2C
+            Wire.begin(SDA_PIN, SCL_PIN);
+            Wire.setClock(10000);
+            dht20.begin();
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            continue;
+        }
 
         // float temp = dht20.getTemperature();
         // float humi = dht20.getHumidity();
-        data.temp = 20.0 + (rand() % 200) / 10.0;
-        data.humi = 40.0 + (rand() % 600) / 10.0;
+        data.temp = dht20.getTemperature();
+        data.humi = dht20.getHumidity();
+        // data.temp = 20.0 + (rand() % 200) / 10.0;
+        // data.humi = 40.0 + (rand() % 600) / 10.0;
 
 
 
@@ -59,12 +70,13 @@ void temp_humi_monitor(void *pvParameters) {
         Serial.printf("Temp: %.1f C (%d) | Humi: %.1f %% (%d)\n",
               data.temp, data.tState,
               data.humi, data.hState);
-        // Gửi Semaphore (Đã sửa tên biến currentHumiState)
+
         
         // ===== GỬI QUEUE =====
         xQueueSend(xQueueLED, &data, 0);
         xQueueSend(xQueueNeo, &data, 0);
         xQueueSend(xQueueWeb, &data, 0);
+        xQueueSend(xQueueTinyML, &data, 0);
         xQueueSend(xQueueCoreIot, &data, 0);
         // Serial.printf("LED Queue: %p\n", xQueueLED);
         // Serial.printf("Neo Queue: %p\n", xQueueNeo);
@@ -73,17 +85,17 @@ void temp_humi_monitor(void *pvParameters) {
         xSemaphoreGive(xSensorSem);
 
         // // --- HIỂN THỊ LCD ---
-        // lcd.setCursor(0, 0);
-        // lcd.print("T:"); lcd.print(temp, 1); lcd.print(" H:"); lcd.print(humi, 0); lcd.print("%");
+        lcd.setCursor(0, 0);
+        lcd.print("T:"); lcd.print(data.temp, 1); lcd.print(" H:"); lcd.print(data.humi, 0); lcd.print("%");
         
-        // lcd.setCursor(0, 1);
-        // if (glob_is_anomaly) {
-        //     lcd.print("AI: ANOMALY!    ");
-        // } else if (tState == 2) {
-        //     lcd.print("WARN: HIGH TEMP!");
-        // } else {
-        //     lcd.print("System Normal   ");
-        // }
+        lcd.setCursor(0, 1);
+        if (glob_is_anomaly) {
+            lcd.print("AI: ANOMALY!    ");
+        } else if (data.tState == 2) {
+            lcd.print("WARN: HIGH TEMP!");
+        } else {
+            lcd.print("System Normal   ");
+        }
 
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }

@@ -52,6 +52,13 @@ void connnectWSV()
               { request->send(LittleFS, "/script.js", "application/javascript"); });
     server.on("/styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(LittleFS, "/styles.css", "text/css"); });
+     server.on("/raphael.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(LittleFS, "/raphael.min.js", "application/javascript");
+    });
+
+    server.on("/justgage.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(LittleFS, "/justgage.min.js", "application/javascript");
+    });
     server.begin();
     ElegantOTA.begin(&server);
     webserver_isrunning = true;
@@ -88,7 +95,7 @@ void task_webserver(void *pvParameters)
 
     // Start AP mode
     startAP();
-
+    startSTA();
     // Start Webserver + WebSocket
     connnectWSV();
     SensorData_t data;
@@ -98,10 +105,10 @@ void task_webserver(void *pvParameters)
         // OTA handle
         Webserver_reconnect();
 
-        // Cleanup WebSocket client chết
+        // Cleanup WebSocket when client died
         ws.cleanupClients();
 
-        // ===== NHẬN DATA TỪ SENSOR =====
+        // ===== RECEIVING DATA FROM SENSOR =====
         if (xQueueReceive(xQueueWeb, &data, 0) == pdTRUE)
         {
             String json = "{";
