@@ -11,6 +11,7 @@
 - [System Architecture](#-system-architecture)
 - [Project Structure](#-project-structure)
 - [Components Details](#-components-details)
+- [CoreIOT Rule Chain Profiles](#-coreiot-rule-chain-profiles)
 - [Hardware Requirements](#-hardware-requirements)
 - [Software Requirements](#-software-requirements)
 - [Installation Guide](#-installation-guide)
@@ -277,6 +278,12 @@ Iot-Project/
 │       ├── dht20-overlay.dts         # Device tree overlay
 │       └── Makefile                  # Build configuration
 │
+├── coreIoT_rulechain_profile/        # CoreIOT Rule Chain Profiles
+│   ├── esp32_profile.json            # ESP32 device profile for CoreIOT
+│   ├── esp32_rulechain.json          # ESP32 rule chain configuration
+│   ├── raspi4_profile.json           # Raspberry Pi 4 device profile
+│   └── raspi_rulechain.json          # Raspberry Pi rule chain configuration
+│
 └── docs/                             # Additional documentation
     ├── ARCHITECTURE.md               # Detailed architecture
     ├── DEVELOPMENT.md                # Development guide
@@ -477,7 +484,217 @@ i2c@1 {
 
 ---
 
-## 🔌 Hardware Requirements
+## � CoreIOT Rule Chain Profiles
+
+The `coreIoT_rulechain_profile/` directory contains pre-configured device profiles and rule chain configurations for CoreIOT platform integration. These JSON files define how devices communicate with the CoreIOT platform and how data is processed through rule chains.
+
+### Profile Structure
+
+#### Device Profiles (`*_profile.json`)
+
+Define device characteristics and telemetry/attribute mappings:
+
+**esp32_profile.json** - ESP32 MCU Configuration
+```json
+{
+  "name": "ESP32_IoT_Sensor_Node",
+  "description": "ESP32-S3 based environmental monitoring device",
+  "profileType": "device",
+  "tenantId": "default",
+  "searchText": "ESP32",
+  "telemetrySchema": [
+    {
+      "name": "temperature",
+      "type": "double",
+      "unit": "°C"
+    },
+    {
+      "name": "humidity",
+      "type": "double",
+      "unit": "%"
+    },
+    {
+      "name": "light_level",
+      "type": "int",
+      "unit": "lux"
+    },
+    {
+      "name": "anomaly_score",
+      "type": "double"
+    },
+    {
+      "name": "anomaly_detected",
+      "type": "boolean"
+    }
+  ],
+  "attributesSchema": [
+    {
+      "name": "device_status",
+      "type": "string"
+    },
+    {
+      "name": "firmware_version",
+      "type": "string"
+    },
+    {
+      "name": "signal_strength",
+      "type": "int"
+    }
+  ]
+}
+```
+
+**raspi4_profile.json** - Raspberry Pi Gateway Configuration
+```json
+{
+  "name": "RasPi_IoT_Gateway",
+  "description": "Raspberry Pi 4 based IoT gateway with kernel drivers",
+  "profileType": "gateway",
+  "tenantId": "default",
+  "searchText": "RasPi Gateway",
+  "telemetrySchema": [
+    {
+      "name": "temperature",
+      "type": "double",
+      "unit": "°C"
+    },
+    {
+      "name": "humidity",
+      "type": "double",
+      "unit": "%"
+    },
+    {
+      "name": "light_level",
+      "type": "double",
+      "unit": "lux"
+    },
+    {
+      "name": "cpu_temperature",
+      "type": "double",
+      "unit": "°C"
+    },
+    {
+      "name": "uptime",
+      "type": "long",
+      "unit": "seconds"
+    }
+  ]
+}
+```
+
+#### Rule Chains (`*_rulechain.json`)
+
+Define processing logic and data flow:
+
+**esp32_rulechain.json** - ESP32 Data Processing
+- Sensor data validation and filtering
+- Anomaly detection rule execution
+- MQTT message transformation
+- Alert generation for threshold violations
+- Cloud service integration
+- Device state updates
+
+**raspi_rulechain.json** - Gateway Data Aggregation
+- Multi-sensor data collection from BH1750 and DHT20
+- Data enrichment with gateway metadata
+- Time-series data aggregation (5-second intervals)
+- Local storage/archival rules
+- Failover and reconnection logic
+- Edge processing for offline scenarios
+
+### Usage
+
+1. **Import into CoreIOT**:
+   ```bash
+   # Login to CoreIOT platform
+   # Navigate to Device Management > Profiles
+   # Import JSON files: esp32_profile.json and raspi4_profile.json
+   # Apply rule chains: esp32_rulechain.json and raspi_rulechain.json
+   ```
+
+2. **Device Registration**:
+   ```bash
+   # Create devices using imported profiles
+   # Assign credentials (tokens) to ESP32 and RasPi
+   # Configure MQTT connectivity
+   # Activate telemetry publishing
+   ```
+
+3. **Dashboard Configuration**:
+   ```bash
+   # Create widgets based on telemetry schema
+   # Link rule chain outputs to dashboard
+   # Set up alerts and notifications
+   # Enable real-time data visualization
+   ```
+
+### Rule Chain Processing Flow
+
+```
+┌─────────────────────────────────────────────────────┐
+│         Device Telemetry Publishing                  │
+└────────────────┬────────────────────────────────────┘
+                 │
+    ┌────────────▼────────────────┐
+    │ Input Node (MQTT Broker)    │
+    └────────────┬────────────────┘
+                 │
+    ┌────────────▼───────────────────────┐
+    │ Message Router                     │
+    │ ├─ Filter by device type          │
+    │ ├─ Validate payload schema        │
+    │ └─ Route to appropriate chain     │
+    └────────────┬───────────────────────┘
+                 │
+    ┌────────────▼─────────────────────────┐
+    │ Data Transformation Node             │
+    │ ├─ Parse JSON payload               │
+    │ ├─ Normalize sensor values          │
+    │ ├─ Add timestamps                  │
+    │ └─ Enrich with metadata            │
+    └────────────┬─────────────────────────┘
+                 │
+    ┌────────────▼──────────────────────────┐
+    │ Anomaly Detection Node (ESP32 only)   │
+    │ ├─ Check ML anomaly_score            │
+    │ ├─ Compare with threshold (0.5)      │
+    │ └─ Route anomalies to alert chain    │
+    └────────────┬──────────────────────────┘
+                 │
+    ┌────────────▼──────────────────────────┐
+    │ Database Node                         │
+    │ ├─ Store in time-series DB           │
+    │ ├─ Update device attributes          │
+    │ └─ Archive historical data           │
+    └────────────┬──────────────────────────┘
+                 │
+    ┌────────────▼───────────────────────────────┐
+    │ Output Nodes (Parallel)                   │
+    │ ├─ Dashboard Websocket                   │
+    │ ├─ External API (HTTP)                   │
+    │ ├─ Notification Service                  │
+    │ └─ Cloud Storage (S3/Blob)              │
+    └────────────┬───────────────────────────────┘
+                 │
+    ┌────────────▼──────────────────────────┐
+    │ End Node                               │
+    │ Log completion and metrics            │
+    └───────────────────────────────────────┘
+```
+
+### Key Configuration Parameters
+
+| Parameter | ESP32 | RasPi | Purpose |
+|-----------|-------|-------|---------|
+| **Publish Interval** | 5 sec | 5 sec | Telemetry update frequency |
+| **Data Retention** | 7 days | 30 days | Historical data storage |
+| **Anomaly Threshold** | 0.5 | N/A | ML confidence threshold |
+| **Alert Level** | WARNING | INFO | Logging severity |
+| **Failover Timeout** | 30 sec | 60 sec | Reconnection attempt interval |
+
+---
+
+## �🔌 Hardware Requirements
 
 ### MCU Node
 
