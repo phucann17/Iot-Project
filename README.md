@@ -612,11 +612,11 @@ cd iot-gateway/mcu
 **Configuration:**
 ```cpp
 // Edit: src/global.cpp
-#define WIFI_SSID "Your_WiFi_Name"
-#define WIFI_PASSWORD "Your_WiFi_Password"
-#define THINGSBOARD_SERVER "your-thingsboard-host"
-#define TB_DEVICE_TOKEN "your_device_token"
-#define DEVICE_NAME "ESP32-Sensor-01"
+#define WIFI_SSID "YOUR_WIFI_NETWORK"           // Replace with your WiFi network name
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"       // Replace with your WiFi password
+#define THINGSBOARD_SERVER "thingsboard.cloud"   // Replace with your ThingsBoard instance
+#define TB_DEVICE_TOKEN "YOUR_DEVICE_TOKEN"      // Replace with your device token
+#define DEVICE_NAME "ESP32-Sensor-01"            // Optional: customize device name
 ```
 
 **Build & Upload:**
@@ -682,8 +682,9 @@ gcc -o app app.c -lmosquitto -lcjson -Wall -O2
 **Configure & Run:**
 ```bash
 # Edit: app/app.c (update broker settings)
-#define CORE_IOT_SERVER "your-server"
-#define CORE_IOT_TOKEN "your_token"
+#define CORE_IOT_SERVER "your-mqtt-broker"      // Replace with your MQTT broker address
+#define CORE_IOT_TOKEN "YOUR_DEVICE_TOKEN"      // Replace with your device token
+#define CORE_IOT_PORT 1883                      // MQTT port (1883 for plain, 8883 for TLS)
 
 # Run with permissions
 sudo chmod +x ./app
@@ -698,7 +699,7 @@ sudo ./app
 
 1. **Connect to ESP32 AP:**
    - SSID: `ESP32-Config`
-   - Password: `password`
+   - Password: `ESP32Config@2024` (Change in config for security)
 
 2. **Access Dashboard:**
    - Open browser: `http://192.168.4.1`
@@ -726,25 +727,25 @@ cat /dev/BH1750
 
 **Monitor Cloud Data:**
 ```bash
-# Watch MQTT messages in real-time
-mosquitto_sub -h app.coreiot.io -t "v1/devices/me/telemetry"
+# Watch MQTT messages in real-time (replace broker address with yours)
+mosquitto_sub -h your-mqtt-broker -t "v1/devices/me/telemetry"
 
 # Or with ThingsBoard
-mosquitto_sub -h thingsboard-server -t "v1/devices/me/telemetry"
+mosquitto_sub -h thingsboard-instance.cloud -t "v1/devices/me/telemetry"
 ```
 
 ### Remote Control via MQTT
 
 **Turn LED ON (publish to RPC topic):**
 ```bash
-mosquitto_pub -h broker \
+mosquitto_pub -h your-mqtt-broker \
   -t "v1/devices/me/rpc/request/1" \
   -m '{"method":"led_on","params":{"led":1}}'
 ```
 
 **LED Blink Command:**
 ```bash
-mosquitto_pub -h broker \
+mosquitto_pub -h your-mqtt-broker \
   -t "v1/devices/me/rpc/request/2" \
   -m '{"method":"led_blink","params":{"led":2,"count":5,"interval":200}}'
 ```

@@ -14,9 +14,9 @@
 #define DHT20_DEVICE   "/dev/dht20"
 #define BH1750_DEVICE  "/dev/BH1750"
 // ===== CORE IOT CONFIG =====
-#define CORE_IOT_SERVER "app.coreiot.io"
+#define CORE_IOT_SERVER "your-mqtt-broker.com"    // Replace with your MQTT broker address
 #define CORE_IOT_PORT   1883
-#define CORE_IOT_TOKEN  "WThvABnF8jf3ADz6tVaj"
+#define CORE_IOT_TOKEN  "YOUR_DEVICE_ACCESS_TOKEN" // Replace with your device token from CoreIOT/ThingsBoard
 #define TOPIC "v1/devices/me/rpc/request/+"
 // ===== GPIO WRITE USING GPIOD =====
 void gpio_write(int gpio, int value){
