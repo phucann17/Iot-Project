@@ -24,7 +24,7 @@ void handleWebSocketMessage(String message)
     DeserializationError error = deserializeJson(doc, message);
     if (error)
     {
-        Serial.println("❌ Failed to parse JSON!");
+        Serial.println(" Failed to parse JSON!");
         return;
     }
 
@@ -37,14 +37,14 @@ void handleWebSocketMessage(String message)
         // Validate required fields
         if (!value.containsKey("gpio") || !value.containsKey("status"))
         {
-            Serial.println("⚠️ JSON missing required fields: 'gpio' or 'status'");
+            Serial.println(" JSON missing required fields: 'gpio' or 'status'");
             return;
         }
 
         int gpio = value["gpio"];                     // GPIO pin number
         String status = value["status"].as<String>(); // Expected: "ON" or "OFF"
 
-        Serial.printf("⚙️ Controlling GPIO %d → %s\n", gpio, status.c_str());
+        Serial.printf(" Controlling GPIO %d → %s\n", gpio, status.c_str());
 
         // Configure pin as output and set state
         pinMode(gpio, OUTPUT);
@@ -56,7 +56,7 @@ void handleWebSocketMessage(String message)
         else if (status.equalsIgnoreCase("OFF"))
         {
             digitalWrite(gpio, LOW);
-            Serial.printf("💤 GPIO %d turned OFF\n", gpio);
+            Serial.printf(" GPIO %d turned OFF\n", gpio);
         }
         // Note: Invalid status values are silently ignored
     }
@@ -71,7 +71,7 @@ void handleWebSocketMessage(String message)
         String CORE_IOT_PORT = doc["value"]["port"].as<String>();
 
         // Log received settings (avoid logging passwords in production!)
-        Serial.println("📥 Received configuration via WebSocket:");
+        Serial.println(" Received configuration via WebSocket:");
         Serial.println("SSID: " + WIFI_SSID);
         Serial.println("PASS: " + WIFI_PASS);
         Serial.println("TOKEN: " + CORE_IOT_TOKEN);
@@ -79,7 +79,7 @@ void handleWebSocketMessage(String message)
         Serial.println("PORT: " + CORE_IOT_PORT);
 
         // Persistently save the new configuration to LittleFS
-        // ⚠️ This function restarts the device after saving!
+        //  This function restarts the device after saving!
         Save_info_File(WIFI_SSID, WIFI_PASS, CORE_IOT_TOKEN, CORE_IOT_SERVER, CORE_IOT_PORT);
 
         // Optional: Acknowledge successful save to all connected WebSocket clients
